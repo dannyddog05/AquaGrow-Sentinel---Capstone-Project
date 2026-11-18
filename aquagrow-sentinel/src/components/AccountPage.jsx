@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { PERMS } from '../data/constants';
 import { can, hashPw } from '../data/db';
-import { Avatar, Field, useToast } from './ui';
+import { ACTS, Avatar, BTN, BTN_P, BTN_SM, BTN_SM_D, CARD, CARD_H2, Field, KV_DL, PG, ROLE_CHIP, TG_ROW, useToast } from './ui';
 import { PrefsCard } from './NotificationsPage';
 import logo from '../assets/logo.png';
 
@@ -31,22 +31,24 @@ export function PasswordForm({ user, update, onDone }) {
   return (
     <>
       <Field label="Current password" err={err.cur}><input type="password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" /></Field>
-      <Field label="New password" err={err.nw}><input type="password" value={nw} onChange={(e) => setNw(e.target.value)} autoComplete="new-password" /><small className="mut">At least 8 characters with a letter and a number.</small></Field>
+      <Field label="New password" err={err.nw}><input type="password" value={nw} onChange={(e) => setNw(e.target.value)} autoComplete="new-password" /><small className="text-mut font-normal">At least 8 characters with a letter and a number.</small></Field>
       <Field label="Confirm new password" err={err.cf}><input type="password" value={cf} onChange={(e) => setCf(e.target.value)} autoComplete="new-password" /></Field>
-      <button className="btn p" onClick={submit}>Change password</button>
+      <button className={BTN_P} onClick={submit}>Change password</button>
     </>
   );
 }
 
 export function ForcePassword({ user, update, onSignOut }) {
   return (
-    <div className="login"><div className="card lg">
-      <img src={logo} alt="" />
-      <h1 style={{ textAlign: 'center', fontSize: 22 }}>Choose a new password</h1>
-      <p className="mut" style={{ textAlign: 'center' }}>An owner set your temporary password. Pick your own to continue.</p>
-      <PasswordForm user={user} update={update} />
-      <button className="btn" style={{ marginTop: 10 }} onClick={onSignOut}>Sign out</button>
-    </div></div>
+    <div className="min-h-screen grid place-items-center p-5 bg-[radial-gradient(900px_400px_at_10%_0,#d9f2e0,transparent),radial-gradient(900px_400px_at_100%_100%,#d6e9fb,transparent)] bg-bg">
+      <div className={`${CARD} w-full max-w-[420px]`}>
+        <img src={logo} alt="" className="w-24 block mx-auto mb-1.5" />
+        <h1 className="text-center text-[22px] font-bold font-display">Choose a new password</h1>
+        <p className="text-mut text-center mb-4">An owner set your temporary password. Pick your own to continue.</p>
+        <PasswordForm user={user} update={update} />
+        <button className={`${BTN} mt-2.5`} onClick={onSignOut}>Sign out</button>
+      </div>
+    </div>
   );
 }
 
@@ -72,22 +74,22 @@ function Profile({ d, update, user, say }) {
     try { const data = await resize(fl); update((n) => { n.users.find((q) => q.id === user.id).photo = data; }, 'Changed profile picture', user.name); say('Profile picture updated.'); } catch (er) { say(er.message); }
   };
   return (
-    <div className="card">
-      <h2>Profile</h2>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+    <div className={CARD}>
+      <h2 className={CARD_H2}>Profile</h2>
+      <div className="flex gap-3.5 items-center mb-3.5 flex-wrap">
         <Avatar u={user} size={72} />
-        <div className="acts">
+        <div className={ACTS}>
           <input ref={file} type="file" accept="image/*" hidden onChange={pick} />
-          <button className="btn sm" onClick={() => file.current.click()}>{user.photo ? 'Change picture' : 'Upload picture'}</button>
-          {user.photo && <button className="btn sm d" onClick={() => update((n) => { n.users.find((q) => q.id === user.id).photo = null; }, 'Removed profile picture', user.name)}>Remove</button>}
+          <button className={BTN_SM} onClick={() => file.current.click()}>{user.photo ? 'Change picture' : 'Upload picture'}</button>
+          {user.photo && <button className={BTN_SM_D} onClick={() => update((n) => { n.users.find((q) => q.id === user.id).photo = null; }, 'Removed profile picture', user.name)}>Remove</button>}
         </div>
       </div>
-      <div className="fg">
+      <div className="grid grid-cols-2 gap-x-3">
         <Field label="Full name" err={err.name}><input value={f.name} onChange={set('name')} /></Field>
         <Field label="Contact number" err={err.phone}><input value={f.phone} onChange={set('phone')} inputMode="tel" /></Field>
         <Field label="Email address" err={err.email} cls="full"><input type="email" value={f.email} onChange={set('email')} /></Field>
       </div>
-      <button className="btn p" onClick={save}>Save profile</button>
+      <button className={BTN_P} onClick={save}>Save profile</button>
     </div>
   );
 }
@@ -96,17 +98,26 @@ export default function AccountPage({ d, update, user }) {
   const [toast, say] = useToast();
   const farms = user.role === 'Owner' ? 'All farms' : (user.farms || []).map((id) => d.farms.find((f) => f.id === id)?.name).filter(Boolean).join(', ') || 'None assigned';
   return (
-    <div className="pg">
-      <div className="grid c2" style={{ alignItems: 'start' }}>
-        <div className="grid">
+    <div className={PG}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-3.5 items-start">
+        <div className="grid gap-3.5">
           <Profile key={user.id} d={d} update={update} user={user} say={say} />
-          <div className="card"><h2>Change password</h2><PasswordForm user={user} update={update} onDone={() => say('Password changed.')} /></div>
+          <div className={CARD}><h2 className={CARD_H2}>Change password</h2><PasswordForm user={user} update={update} onDone={() => say('Password changed.')} /></div>
         </div>
-        <div className="grid">
-          <div className="card">
-            <h2>Your access</h2>
-            <dl className="kv"><dt>Role</dt><dd><span className="role">{user.role}</span></dd><dt>Farms</dt><dd>{farms}</dd><dt>Last sign-in</dt><dd>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '—'}</dd></dl>
-            {PERMS.map(([k, l]) => <div className="tg" key={k}><span>{l}</span><b style={{ color: can(user, k) ? 'var(--gd)' : 'var(--mut)' }}>{can(user, k) ? 'Allowed' : 'Not allowed'}</b></div>)}
+        <div className="grid gap-3.5">
+          <div className={CARD}>
+            <h2 className={CARD_H2}>Your access</h2>
+            <dl className={KV_DL}>
+              <dt className="text-mut">Role</dt><dd className="m-0"><span className={ROLE_CHIP}>{user.role}</span></dd>
+              <dt className="text-mut">Farms</dt><dd className="m-0">{farms}</dd>
+              <dt className="text-mut">Last sign-in</dt><dd className="m-0">{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '—'}</dd>
+            </dl>
+            {PERMS.map(([k, l]) => (
+              <div className={TG_ROW} key={k}>
+                <span>{l}</span>
+                <b className={can(user, k) ? 'text-brand-dark' : 'text-mut'}>{can(user, k) ? 'Allowed' : 'Not allowed'}</b>
+              </div>
+            ))}
           </div>
           {user.role !== 'Viewer' && <PrefsCard d={d} update={update} user={user} />}
         </div>

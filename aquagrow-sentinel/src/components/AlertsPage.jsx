@@ -1,19 +1,24 @@
 import { useState } from 'react';
-import { Modal, StatusDot } from './ui';
+import { ACTS, BAR2, BTN, BTN_GHOST, BTN_P, BTN_SM, BTN_SM_P, CARD, CHK_LBL, Card, Field, INNER_TABS, INP, Modal, PG, StatCard, StatStrip, StatusDot, innerTab } from './ui';
 import { ago, now, notify, can } from '../data/db';
 
-const ST = { open: 'Open', ack: 'Acknowledged', resolved: 'Resolved' };
 const fmt = (t) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 const areasOf = (d, r) => r.areaIds.map((i) => d.areas.find((a) => a.id === i)?.name).filter(Boolean).join(', ') || 'System';
+
+const SEV_BORDER = {
+  critical: 'border-l-crit',
+  warning: 'border-l-warn',
+  offline: 'border-l-off',
+};
 
 function Remark({ onPost }) {
   const [t, setT] = useState(''), [a, setA] = useState(true);
   return (
-    <div style={{ marginTop: 10 }}>
-      <textarea className="inp" style={{ width: '100%' }} rows="2" aria-label="Remark" placeholder="Add a remark or record an action taken" value={t} onChange={(e) => setT(e.target.value)} />
-      <div className="acts" style={{ marginTop: 6, alignItems: 'center' }}>
-        <label className="chk"><input type="checkbox" checked={a} onChange={(e) => setA(e.target.checked)} />Action taken</label>
-        <button className="btn sm p" disabled={!t.trim()} onClick={() => { onPost(t.trim(), a); setT(''); }}>Post</button>
+    <div className="mt-2.5">
+      <textarea className={`${INP} w-full`} rows="2" aria-label="Remark" placeholder="Add a remark or record an action taken" value={t} onChange={(e) => setT(e.target.value)} />
+      <div className={`${ACTS} mt-1.5`}>
+        <label className={CHK_LBL}><input type="checkbox" checked={a} onChange={(e) => setA(e.target.checked)} />Action taken</label>
+        <button className={BTN_SM_P} disabled={!t.trim()} onClick={() => { onPost(t.trim(), a); setT(''); }}>Post</button>
       </div>
     </div>
   );
@@ -24,38 +29,49 @@ function AlertCard({ d, r, canAct, h }) {
   const [open, setOpen] = useState(false), done = r.status === 'resolved';
   const meta = [`Detected ${fmt(r.t)} (${ago(r.t)})`, r.assignee ? `Assigned to ${nameOf(r.assignee)}` : null, r.ackBy ? `Acknowledged by ${r.ackBy}` : null, done ? `Resolved by ${r.resolvedBy}` : null].filter(Boolean).join('  ·  ');
   return (
-    <div className={`card ac2 ac2-${r.sev}${done ? ' done' : ''}`}>
-      <div className="ac2-head">
-        <div><div className="ac2-area">{areasOf(d, r)}</div><div className="ac2-title">{r.title}</div></div>
-        <div className="ac2-tags">
-          {r.escalated && !done && <span className="tag tag-bad">Escalated</span>}
-          {r.status === 'ack' && <span className="tag">Acknowledged</span>}
-          {done && <span className="tag tag-ok">Resolved</span>}
+    <div className={`${CARD} border-l-[5px] ${SEV_BORDER[r.sev] || 'border-l-[#b8c2cc]'} p-3.5 sm:py-4 sm:px-[18px] ${done ? 'opacity-[0.82]' : ''}`}>
+      <div className="flex justify-between gap-3 items-start flex-wrap">
+        <div>
+          <div className="font-display font-bold text-[17px] text-ink">{areasOf(d, r)}</div>
+          <div className="text-mut text-[14px]">{r.title}</div>
+        </div>
+        <div className="flex gap-2.5 items-center flex-wrap">
+          {r.escalated && !done && <span className="text-[11px] font-bold py-0.5 px-[9px] rounded-full bg-[#fde7ef] text-[#a3234f]">Escalated</span>}
+          {r.status === 'ack' && <span className="text-[11px] font-bold py-0.5 px-[9px] rounded-full bg-[#eef2f0] text-[#4a6159]">Acknowledged</span>}
+          {done && <span className="text-[11px] font-bold py-0.5 px-[9px] rounded-full bg-brand-pale text-brand-dark">Resolved</span>}
           <StatusDot s={r.sev} />
         </div>
       </div>
-      <div className="ac2-facts">
-        <div><small>Detected reading</small><div className="v">{r.value0}</div></div>
-        <div><small>{done ? 'Last reading' : 'Now'}</small><div className="v">{r.value}</div></div>
-        <div><small>Expected</small><div className="v">{r.range}</div></div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-[18px] gap-y-2.5 mt-3.5 mb-1.5">
+        <div><small className="block text-mut text-[11px] uppercase tracking-[0.05em]">Detected reading</small><div className="font-display font-semibold text-[18px] text-ink">{r.value0}</div></div>
+        <div><small className="block text-mut text-[11px] uppercase tracking-[0.05em]">{done ? 'Last reading' : 'Now'}</small><div className="font-display font-semibold text-[18px] text-ink">{r.value}</div></div>
+        <div><small className="block text-mut text-[11px] uppercase tracking-[0.05em]">Expected</small><div className="font-display font-semibold text-[18px] text-ink">{r.range}</div></div>
       </div>
-      <div className="ac2-meta">{meta}</div>
-      <div className="ac2-rec"><b>What to do</b><p>{r.rec}</p></div>
-      <div className="ac2-actions">
-        {canAct && r.status === 'open' && <button className="btn sm p" onClick={() => h.ack(r)}>Acknowledge</button>}
-        {canAct && !done && <button className="btn sm" onClick={() => h.askResolve(r)}>Resolve</button>}
-        {canAct && done && <button className="btn sm" onClick={() => h.reopen(r)}>Reopen</button>}
+      <div className="text-mut text-[12.5px] mb-1.5">{meta}</div>
+      <div className="bg-[#eef8f1] border border-[#cfe8d6] border-l-4 border-l-brand rounded-[10px] py-2.5 px-3.5 mt-2.5 mb-3.5">
+        <b className="block text-[11px] uppercase tracking-[0.07em] text-brand-dark mb-0.5">What to do</b>
+        <p className="m-0 text-[15px] font-semibold text-ink">{r.rec}</p>
+      </div>
+      <div className="flex gap-2 flex-wrap items-center">
+        {canAct && r.status === 'open' && <button className={BTN_SM_P} onClick={() => h.ack(r)}>Acknowledge</button>}
+        {canAct && !done && <button className={BTN_SM} onClick={() => h.askResolve(r)}>Resolve</button>}
+        {canAct && done && <button className={BTN_SM} onClick={() => h.reopen(r)}>Reopen</button>}
         {canAct && !done && (
-          <select className="inp" style={{ padding: '4px 8px' }} aria-label="Assign to" value={r.assignee || ''} onChange={(e) => h.assign(r, e.target.value)}>
+          <select className={`${INP} py-1 px-2 text-[13px]`} aria-label="Assign to" value={r.assignee || ''} onChange={(e) => h.assign(r, e.target.value)}>
             <option value="">Assign to…</option>{STAFF.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
         )}
-        <button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'} timeline ({r.tl.length})</button>
+        <button className={BTN_GHOST} onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'} timeline ({r.tl.length})</button>
       </div>
       {open && (
-        <div style={{ marginTop: 12 }}>
+        <div className="mt-3">
           {[...r.tl].reverse().map((e, i) => (
-            <div className="tlr" key={i}><time>{fmt(e.t)}</time><div><b>{e.by}</b> · {e.type === 'action' ? <b style={{ color: 'var(--gd)' }}>Action taken: </b> : null}{e.text}</div></div>
+            <div className="flex gap-2.5 py-1.5 border-b border-line last:border-b-0 text-[13px]" key={i}>
+              <time className="text-mut whitespace-nowrap min-w-[92px]">{fmt(e.t)}</time>
+              <div>
+                <b>{e.by}</b> · {e.type === 'action' ? <b className="text-brand-dark">Action taken: </b> : null}{e.text}
+              </div>
+            </div>
           ))}
           {canAct && !done && <Remark onPost={(t, a) => h.remark(r, t, a)} />}
         </div>
@@ -97,32 +113,44 @@ export default function AlertsPage({ d, update, user }) {
   const c = (s) => d.alertRecs.filter((r) => r.status === s).length;
 
   return (
-    <div className="pg">
-      <div className="grid s5">
+    <div className={PG}>
+      <StatStrip>
         {[['Open', c('open')], ['Acknowledged', c('ack')], ['Critical active', d.alertRecs.filter((r) => r.sev === 'critical' && r.status !== 'resolved').length], ['Offline active', d.alertRecs.filter((r) => r.sev === 'offline' && r.status !== 'resolved').length], ['Resolved', c('resolved')]].map(([l, n]) => (
-          <div className="card stat" key={l}><div className="n">{n}</div><div className="l">{l}</div></div>
+          <StatCard key={l} value={n} label={l} />
         ))}
-      </div>
-      <div className="bar2">
-        <div className="tabs" role="tablist">
-          {[['active', 'Active'], ['open', 'Open'], ['ack', 'Acknowledged'], ['resolved', 'Resolved'], ['all', 'All']].map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>{l}</button>)}
+      </StatStrip>
+      <div className={BAR2}>
+        <div className={INNER_TABS} role="tablist">
+          {[['active', 'Active'], ['open', 'Open'], ['ack', 'Acknowledged'], ['resolved', 'Resolved'], ['all', 'All']].map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={tab === k} className={innerTab(tab === k)} onClick={() => setTab(k)}>{l}</button>
+          ))}
         </div>
-        <div className="acts">
-          <select className="inp" aria-label="Severity" value={sev} onChange={(e) => setSev(e.target.value)}><option value="all">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="offline">Offline</option></select>
-          <select className="inp" aria-label="Area" value={area} onChange={(e) => setArea(e.target.value)}><option value="all">All areas</option>{d.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+        <div className={ACTS}>
+          <select className={INP} aria-label="Severity" value={sev} onChange={(e) => setSev(e.target.value)}><option value="all">All severities</option><option value="critical">Critical</option><option value="warning">Warning</option><option value="offline">Offline</option></select>
+          <select className={INP} aria-label="Area" value={area} onChange={(e) => setArea(e.target.value)}><option value="all">All areas</option>{d.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
         </div>
       </div>
-      <p className="mut" style={{ margin: 0, fontSize: 13 }}>Alerts are created automatically from sensor readings and device status. One alert is kept per ongoing problem, so you are not notified twice. Critical alerts that stay open for {d.settings.escMin} minute(s) are escalated to the owner.</p>
-      {list.length === 0 && <div className="card"><p className="mut">No alerts match these filters.</p></div>}
+      <p className="text-mut m-0 text-[13px]">Alerts are created automatically from sensor readings and device status. One alert is kept per ongoing problem, so you are not notified twice. Critical alerts that stay open for {d.settings.escMin} minute(s) are escalated to the owner.</p>
+      {list.length === 0 && <div className={CARD}><p className="text-mut">No alerts match these filters.</p></div>}
       {list.map((r) => <AlertCard key={r.id} d={d} r={r} canAct={canAct} h={h} />)}
 
       {res && (
-        <Modal title="Resolve alert" onClose={() => setRes(null)} foot={<><button className="btn" onClick={() => setRes(null)}>Cancel</button><button className="btn p" onClick={resolve}>Mark resolved</button></>}>
-          <p style={{ marginTop: 0 }}>{areasOf(d, res)} · {res.title}</p>
-          <label className="fld">Action taken (optional)<textarea rows="3" autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Cleaned the filter and reduced feeding" /></label>
+        <Modal title="Resolve alert" onClose={() => setRes(null)} foot={<><button className={BTN} onClick={() => setRes(null)}>Cancel</button><button className={BTN_P} onClick={resolve}>Mark resolved</button></>}>
+          <p className="mt-0 mb-2.5">{areasOf(d, res)} · {res.title}</p>
+          <Field label="Action taken (optional)">
+            <textarea rows="3" autoFocus value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Cleaned the filter and reduced feeding" />
+          </Field>
         </Modal>
       )}
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {toast && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bg-ink text-white px-4 py-2.5 rounded-[10px] z-20 text-[14px] shadow-lg"
+          style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
+          role="status"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

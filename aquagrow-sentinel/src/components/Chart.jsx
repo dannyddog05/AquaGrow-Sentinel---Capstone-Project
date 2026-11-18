@@ -13,7 +13,7 @@ export default function Chart({ pts, u, th }) {
   const refs = [['wl', '#e08a00'], ['wh', '#e08a00'], ['cl', '#d6336c'], ['ch', '#d6336c']]
     .filter(([k]) => th && th[k] != null && th[k] > lo && th[k] < hi);
   return (
-    <svg className="ch" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Sensor trend chart">
+    <svg className="w-full h-[230px] block" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Sensor trend chart">
       {[0, 1, 2, 3].map((i) => {
         const v = lo + ((hi - lo) * i) / 3;
         return (<g key={i}><line x1={P} x2={W - 10} y1={Y(v)} y2={Y(v)} stroke="#dbe8e2" /><text x="2" y={Y(v) + 4} fontSize="11" fill="#5d7a72">{v.toFixed(1)}</text></g>);

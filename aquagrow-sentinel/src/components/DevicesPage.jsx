@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BOARDS, DEFB, LATEST_FW, STYPES } from '../data/constants';
-import { Modal, Field, StatusDot, accent } from './ui';
+import { ACTS, BAR2, BTN, BTN_CRIT, BTN_P, BTN_SM, BTN_SM_D, Card, Field, INNER_TABS, INP, KEY_CODE, Modal, PG, StatCard, StatStrip, StatusBadge, StatusDot, innerTab } from './ui';
 import SensorsTab from './SensorsTab';
 import PinMap from './PinMap';
 import { can, ago, now, fmtDur, rssiLabel, battVolt, nextId, boardOf, sensorConn } from '../data/db';
@@ -9,7 +9,7 @@ const MAINT = { ok: ['Operational', 'normal'], due: ['Service due', 'warning'], 
 const batt = (v) => (v.battery == null ? 'Mains powered' : `${Math.round(v.battery)}% · ${battVolt(v.battery)} V`);
 const wifi = (v) => (v.rssi == null || v.status !== 'online' ? '—' : `${v.rssi} dBm · ${rssiLabel(v.rssi)}`);
 const upt = (v) => (v.status === 'online' && v.boot ? fmtDur(now() - v.boot) : '—');
-const Fact = ({ k, children }) => <div><small>{k}</small>{children}</div>;
+const Fact = ({ k, children }) => <div><small className="block text-mut">{k}</small>{children}</div>;
 
 function DeviceForm({ d, dev, onSave, onClose }) {
   const [f, setF] = useState({ code: dev?.code || nextId(d.devices, 'ESP32-', 'code'), name: dev?.name || '', mac: dev?.mac || '', board: dev?.board || DEFB, power: dev ? (dev.battery == null ? 'mains' : 'battery') : 'battery' });
@@ -27,14 +27,16 @@ function DeviceForm({ d, dev, onSave, onClose }) {
   };
   return (
     <Modal title={dev ? `Edit ${dev.code}` : 'Register ESP32 device'} onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn p" onClick={submit}>{dev ? 'Save changes' : 'Register device'}</button></>}>
-      <div className="fg">
+      foot={<><button className={BTN} onClick={onClose}>Cancel</button><button className={BTN_P} onClick={submit}>{dev ? 'Save changes' : 'Register device'}</button></>}>
+      <div className="grid grid-cols-2 gap-x-3">
         <Field label="Device ID" err={err.code}><input autoFocus value={f.code} onChange={set('code')} disabled={!!dev} /></Field>
         <Field label="Device name" err={err.name}><input value={f.name} onChange={set('name')} /></Field>
         <Field label="MAC address" err={err.mac}><input value={f.mac} onChange={set('mac')} placeholder="24:6F:28:AA:BB:CC" /></Field>
         <Field label="Power source"><select value={f.power} onChange={set('power')}><option value="battery">Battery</option><option value="mains">Mains powered</option></select></Field>
-        <Field label="Board" cls="full"><select value={f.board} onChange={set('board')}>{Object.keys(BOARDS).map((b) => <option key={b}>{b}</option>)}</select>
-          <small className="mut">The board decides which GPIO pins are available for sensors.</small></Field>
+        <Field label="Board" cls="full">
+          <select value={f.board} onChange={set('board')}>{Object.keys(BOARDS).map((b) => <option key={b}>{b}</option>)}</select>
+          <small className="text-mut font-normal">The board decides which GPIO pins are available for sensors.</small>
+        </Field>
       </div>
     </Modal>
   );
@@ -50,9 +52,9 @@ function DeviceView({ d, dev, canEdit, update, user, say, onClose }) {
   const setMaint = (m) => { update((n) => { n.devices.find((x) => x.id === dev.id).maint = m; }, `Set ${dev.code} maintenance status to ${MAINT[m][0]}`, user.name); say('Maintenance status updated.'); };
   const b = boardOf(dev), total = b.analog.length + b.digital.length;
   return (
-    <Modal title={`${dev.code} · ${dev.name}`} onClose={onClose} foot={<button className="btn" onClick={onClose}>Close</button>}>
-      <div className="facts">
-        <Fact k="Status"><StatusDot s={dev.status} /></Fact>
+    <Modal title={`${dev.code} · ${dev.name}`} onClose={onClose} foot={<button className={BTN} onClick={onClose}>Close</button>}>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 my-2.5 text-[13px]">
+        <Fact k="Status"><StatusDot s={dev.status} className="mt-1" /></Fact>
         <Fact k="Last communication">{ago(dev.seen)}</Fact>
         <Fact k="Battery">{batt(dev)}</Fact><Fact k="Wi-Fi signal">{wifi(dev)}</Fact>
         <Fact k="Firmware">{dev.fw || '—'}{dev.fw && dev.fw !== LATEST_FW && ` (latest ${LATEST_FW})`}</Fact><Fact k="Uptime">{upt(dev)}</Fact>
@@ -60,17 +62,36 @@ function DeviceView({ d, dev, canEdit, update, user, say, onClose }) {
         <Fact k="Pins used">{ss.length} of {total}</Fact>
         <Fact k="Assigned areas">{ar.length ? ar.map((a) => a.name).join(', ') : 'None'}</Fact>
         <Fact k="Maintenance">
-          {canEdit ? <select className="inp" aria-label="Maintenance status" value={dev.maint} onChange={(e) => setMaint(e.target.value)}>{Object.entries(MAINT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select> : MAINT[dev.maint][0]}
+          {canEdit ? <select className={INP} aria-label="Maintenance status" value={dev.maint} onChange={(e) => setMaint(e.target.value)}>{Object.entries(MAINT).map(([k, v]) => <option key={k} value={k}>{v[0]}</option>)}</select> : MAINT[dev.maint][0]}
         </Fact>
-        {canEdit && <Fact k="Device API key"><span className="key">{dev.key}</span></Fact>}
+        {canEdit && <Fact k="Device API key"><span className={KEY_CODE}>{dev.key}</span></Fact>}
       </div>
-      <b className="f">Sensors on this device</b>
-      {ss.length === 0 ? <p className="mut">No sensors registered.</p> : (
-        <div className="tw"><table className="tbl" style={{ minWidth: 0 }}><tbody>{ss.map((s) => (
-          <tr key={s.id}><td><b>{s.id}</b></td><td>{STYPES[s.type].name}</td><td>GPIO{s.pin}</td><td><span className={`pill ${sensorConn(d, s) === 'connected' ? 'normal' : sensorConn(d, s) === 'offline' ? 'offline' : 'critical'}`}>{sensorConn(d, s)}</span></td></tr>
-        ))}</tbody></table></div>
+      <b className="font-display">Sensors on this device</b>
+      {ss.length === 0 ? <p className="text-mut">No sensors registered.</p> : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[14px]">
+            <tbody>
+              {ss.map((s) => (
+                <tr key={s.id}>
+                  <td className="py-[9px] px-2 border-b border-line align-middle"><b>{s.id}</b></td>
+                  <td className="py-[9px] px-2 border-b border-line align-middle">{STYPES[s.type].name}</td>
+                  <td className="py-[9px] px-2 border-b border-line align-middle">GPIO{s.pin}</td>
+                  <td className="py-[9px] px-2 border-b border-line align-middle">
+                    <StatusBadge status={sensorConn(d, s) === 'connected' ? 'normal' : sensorConn(d, s) === 'offline' ? 'offline' : 'critical'}>
+                      {sensorConn(d, s)}
+                    </StatusBadge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-      {canEdit && <p className="mut" style={{ fontSize: 13 }}>Demo control: <button className="btn sm" onClick={toggle}>{on ? 'Simulate disconnect' : 'Simulate connect'}</button> (replaces the real ESP32 until hardware is connected)</p>}
+      {canEdit && (
+        <p className="text-mut text-[13px] mt-3">
+          Demo control: <button className={BTN_SM} onClick={toggle}>{on ? 'Simulate disconnect' : 'Simulate connect'}</button> (replaces the real ESP32 until hardware is connected)
+        </p>
+      )}
     </Modal>
   );
 }
@@ -95,58 +116,75 @@ export default function DevicesPage({ d, update, user }) {
     close(); say('Device deleted.');
   };
 
-  const Stat = ({ n, l }) => <div className="card stat"><div className="n">{n}</div><div className="l">{l}</div></div>;
   return (
-    <div className="pg">
-      <div className="bar2">
-        <div className="tabs" role="tablist">
-          {[['dev', 'Devices'], ['sen', 'Sensors'], ['pin', 'Pin map']].map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>{l}</button>)}
+    <div className={PG}>
+      <div className={BAR2}>
+        <div className={INNER_TABS} role="tablist">
+          {[['dev', 'Devices'], ['sen', 'Sensors'], ['pin', 'Pin map']].map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={tab === k} className={innerTab(tab === k)} onClick={() => setTab(k)}>{l}</button>
+          ))}
         </div>
-        {canEdit && tab === 'dev' && <button className="btn p" onClick={() => setMod({ t: 'form' })}>+ Register device</button>}
+        {canEdit && tab === 'dev' && <button className={BTN_P} onClick={() => setMod({ t: 'form' })}>+ Register device</button>}
       </div>
 
-      {tab === 'dev' && <>
-        <div className="grid s5">
-          <Stat n={cnt('online')} l="Online" /><Stat n={cnt('offline')} l="Offline" /><Stat n={cnt('disconnected')} l="Disconnected" />
-          <Stat n={d.devices.filter((v) => v.maint !== 'ok').length} l="Need maintenance" /><Stat n={d.devices.filter((v) => v.battery != null && v.battery < 20).length} l="Low battery (<20%)" />
-        </div>
-        <div className="grid cA">
-          {d.devices.map((v) => {
-            const ar = d.areas.filter((a) => a.dev === v.id);
-            return (
-              <div className={`card ${accent(v.status)}`} key={v.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  <div><b className="f">{v.code}</b><div className="mut" style={{ fontSize: 12 }}>{v.name}</div></div><StatusDot s={v.status} />
-                </div>
-                <div className="facts">
-                  <Fact k="Last seen">{ago(v.seen)}</Fact><Fact k="Uptime">{upt(v)}</Fact>
-                  <Fact k="Battery"><span style={{ color: v.battery != null && v.battery < 20 ? 'var(--crit)' : 'inherit', fontWeight: 600 }}>{batt(v)}</span></Fact>
-                  <Fact k="Wi-Fi">{wifi(v)}</Fact>
-                  <Fact k="Firmware">{v.fw || '—'} {v.fw && v.fw !== '—' && v.fw !== LATEST_FW && <span className="pill warning">update</span>}</Fact>
-                  <Fact k="Maintenance"><StatusDot s={{ ok: 'normal', due: 'warning', under: 'maintenance' }[v.maint]} label={MAINT[v.maint][0]} /></Fact>
-                  <Fact k="Areas">{ar.length ? ar.map((a) => a.name).join(', ') : 'None'}</Fact>
-                </div>
-                <div className="acts">
-                  <button className="btn sm" onClick={() => setMod({ t: 'view', id: v.id })}>Details</button>
-                  {canEdit && <button className="btn sm" onClick={() => setMod({ t: 'form', dev: v })}>Edit</button>}
-                  {canDel && <button className="btn sm d" onClick={() => setMod({ t: 'del', dev: v })}>Delete</button>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </>}
+      {tab === 'dev' && (
+        <>
+          <StatStrip>
+            <StatCard value={cnt('online')} label="Online" /><StatCard value={cnt('offline')} label="Offline" /><StatCard value={cnt('disconnected')} label="Disconnected" />
+            <StatCard value={d.devices.filter((v) => v.maint !== 'ok').length} label="Need maintenance" /><StatCard value={d.devices.filter((v) => v.battery != null && v.battery < 20).length} label="Low battery (<20%)" />
+          </StatStrip>
+          <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3.5">
+            {d.devices.map((v) => {
+              const ar = d.areas.filter((a) => a.dev === v.id);
+              return (
+                <Card status={v.status} key={v.id}>
+                  <div className="flex justify-between gap-2">
+                    <div>
+                      <b className="font-display">{v.code}</b>
+                      <div className="text-mut text-[12px]">{v.name}</div>
+                    </div>
+                    <StatusDot s={v.status} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 my-2.5 text-[13px]">
+                    <Fact k="Last seen">{ago(v.seen)}</Fact><Fact k="Uptime">{upt(v)}</Fact>
+                    <Fact k="Battery">
+                      <span className={`font-semibold ${v.battery != null && v.battery < 20 ? 'text-crit' : ''}`}>{batt(v)}</span>
+                    </Fact>
+                    <Fact k="Wi-Fi">{wifi(v)}</Fact>
+                    <Fact k="Firmware">{v.fw || '—'} {v.fw && v.fw !== '—' && v.fw !== LATEST_FW && <StatusBadge status="warning">update</StatusBadge>}</Fact>
+                    <Fact k="Maintenance"><StatusDot s={{ ok: 'normal', due: 'warning', under: 'maintenance' }[v.maint]} label={MAINT[v.maint][0]} className="mt-1" /></Fact>
+                    <Fact k="Areas">{ar.length ? ar.map((a) => a.name).join(', ') : 'None'}</Fact>
+                  </div>
+                  <div className={ACTS}>
+                    <button className={BTN_SM} onClick={() => setMod({ t: 'view', id: v.id })}>Details</button>
+                    {canEdit && <button className={BTN_SM} onClick={() => setMod({ t: 'form', dev: v })}>Edit</button>}
+                    {canDel && <button className={BTN_SM_D} onClick={() => setMod({ t: 'del', dev: v })}>Delete</button>}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
       {tab === 'sen' && <SensorsTab d={d} update={update} user={user} say={say} />}
       {tab === 'pin' && <PinMap d={d} />}
 
       {mod?.t === 'form' && <DeviceForm d={d} dev={mod.dev} onSave={save} onClose={close} />}
       {mod?.t === 'view' && d.devices.find((v) => v.id === mod.id) && <DeviceView d={d} dev={d.devices.find((v) => v.id === mod.id)} canEdit={canEdit} update={update} user={user} say={say} onClose={close} />}
       {mod?.t === 'del' && (
-        <Modal title="Delete device?" onClose={close} foot={<><button className="btn" onClick={close}>Cancel</button><button className="btn p" style={{ background: 'var(--crit)', borderColor: 'var(--crit)' }} onClick={remove}>Delete</button></>}>
+        <Modal title="Delete device?" onClose={close} foot={<><button className={BTN} onClick={close}>Cancel</button><button className={BTN_CRIT} onClick={remove}>Delete</button></>}>
           <p>{mod.dev.code} and its {d.sensors.filter((s) => s.dev === mod.dev.id).length} sensor(s) will be removed. Areas using it become unassigned.</p>
         </Modal>
       )}
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {toast && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bg-ink text-white px-4 py-2.5 rounded-[10px] z-20 text-[14px] shadow-lg"
+          style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
+          role="status"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

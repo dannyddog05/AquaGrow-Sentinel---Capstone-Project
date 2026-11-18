@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { M, STYPES } from '../data/constants';
-import { Modal, Field } from './ui';
-import { can, areaStatus, metricsOf, freePins, sensorConn, calibState, ago, now, nextId } from '../data/db';
+import { BTN, BTN_CRIT, BTN_P, BTN_SM, BTN_SM_D, BTN_SM_P, CARD, CARD_H2, Field, Modal, pill } from './ui';
+import { can, metricsOf, freePins, sensorConn, calibState, ago, now, nextId } from '../data/db';
 
 const CAL = { ok: ['Calibrated', 'normal'], due: ['Due', 'warning'], never: ['Not calibrated', 'offline'], failed: ['Failed', 'critical'] };
 const CONN = { connected: 'normal', disconnected: 'critical', offline: 'offline' };
@@ -24,8 +24,8 @@ function SensorForm({ d, sensor, onSave, onClose }) {
   };
   return (
     <Modal title={sensor ? `Edit ${sensor.id}` : 'Register sensor'} onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn p" onClick={submit}>{sensor ? 'Save changes' : 'Register sensor'}</button></>}>
-      <div className="fg">
+      foot={<><button className={BTN} onClick={onClose}>Cancel</button><button className={BTN_P} onClick={submit}>{sensor ? 'Save changes' : 'Register sensor'}</button></>}>
+      <div className="grid grid-cols-2 gap-x-3">
         <Field label="Sensor type" cls="full"><select value={f.type} onChange={set('type')}>{Object.entries(STYPES).map(([k, t]) => <option key={k} value={k}>{t.name}</option>)}</select></Field>
         <Field label="ESP32 device" err={err.dev}><select value={f.dev} onChange={set('dev')}>{d.devices.map((v) => <option key={v.id} value={v.id}>{v.code}</option>)}</select></Field>
         <Field label={`GPIO pin (${STYPES[f.type].pin})`} err={err.pin}>
@@ -33,7 +33,7 @@ function SensorForm({ d, sensor, onSave, onClose }) {
         </Field>
         <Field label="Monitoring area" err={err.area} cls="full">
           <select value={area} onChange={set('area')}><option value="">Not assigned</option>{areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
-          <small className="mut">Only areas assigned to the selected ESP32 are listed.</small>
+          <small className="text-mut font-normal">Only areas assigned to the selected ESP32 are listed.</small>
         </Field>
       </div>
     </Modal>
@@ -44,8 +44,8 @@ export function CalForm({ s, onSave, onClose }) {
   const [res, setRes] = useState('Pass'), [note, setNote] = useState('');
   return (
     <Modal title={`Record calibration · ${s.id}`} onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn p" onClick={() => onSave({ t: now(), result: res, note: note.trim() })}>Save record</button></>}>
-      <div className="fg">
+      foot={<><button className={BTN} onClick={onClose}>Cancel</button><button className={BTN_P} onClick={() => onSave({ t: now(), result: res, note: note.trim() })}>Save record</button></>}>
+      <div className="grid grid-cols-2 gap-x-3">
         <Field label="Result"><select value={res} onChange={(e) => setRes(e.target.value)}><option>Pass</option><option>Fail</option></select></Field>
         <Field label="Date"><input value={new Date().toLocaleDateString()} disabled /></Field>
         <Field label="Notes (optional)" cls="full"><textarea rows="2" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
@@ -79,42 +79,62 @@ export default function SensorsTab({ d, update, user, say }) {
 
   return (
     <>
-      <div className="grid cA">
+      <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3.5">
         {Object.entries(STYPES).map(([k, t]) => (
-          <div className="card" key={k} style={{ padding: 14 }}><b className="f">{t.name}</b>
-            <div className="mut" style={{ fontSize: 13 }}>{t.pin} input · {d.sensors.filter((s) => s.type === k).length} registered</div></div>
+          <div className={`${CARD} p-3.5`} key={k}>
+            <b className="font-display">{t.name}</b>
+            <div className="text-mut text-[13px]">{t.pin} input · {d.sensors.filter((s) => s.type === k).length} registered</div>
+          </div>
         ))}
       </div>
-      <div className="card">
-        <h2>Registered sensors {canEdit && <button className="btn p sm" onClick={() => setMod({ t: 'form' })}>+ Register sensor</button>}</h2>
-        <div className="tw"><table className="tbl">
-          <thead><tr><th>Sensor</th><th>Type</th><th>ESP32 · Pin</th><th>Area</th><th>Connection</th><th>Reading</th><th>Calibration</th><th>Last reading</th>{canEdit && <th></th>}</tr></thead>
-          <tbody>
-            {d.sensors.length === 0 && <tr><td colSpan="9" className="mut">No sensors registered.</td></tr>}
-            {d.sensors.map((s) => {
-              const dv = d.devices.find((v) => v.id === s.dev), a = d.areas.find((x) => x.id === s.area), cn = sensorConn(d, s), cs = calibState(s);
-              const live = cn === 'connected' && a ? a.r[s.type] : null;
-              return (
-                <tr key={s.id}>
-                  <td><b className="f">{s.id}</b></td><td>{M[s.type].n}</td><td>{dv?.code} · GPIO{s.pin}</td><td>{a ? a.name : <span className="mut">Not assigned</span>}</td>
-                  <td><span className={`pill ${CONN[cn]}`}>{cn}</span></td><td>{live != null ? `${live}${M[s.type].u}` : '—'}</td>
-                  <td><span className={`pill ${CAL[cs][1]}`} title={s.calib ? new Date(s.calib.t).toLocaleDateString() : ''}>{CAL[cs][0]}</span></td>
-                  <td>{ago(s.last)}</td>
-                  {canEdit && <td><div className="acts" style={{ flexWrap: 'nowrap' }}>
-                    <button className="btn sm" onClick={() => setMod({ t: 'form', s })}>Edit</button>
-                    <button className="btn sm" onClick={() => setMod({ t: 'cal', s })}>Calibrate</button>
-                    <button className="btn sm" title="Demo: simulate a wiring fault" onClick={() => fault(s)}>{s.fault ? 'Reconnect' : 'Fault'}</button>
-                    {canDel && <button className="btn sm d" onClick={() => setMod({ t: 'del', s })}>Delete</button>}
-                  </div></td>}
-                </tr>
-              );
-            })}
-          </tbody></table></div>
+      <div className={CARD}>
+        <h2 className={CARD_H2}>Registered sensors {canEdit && <button className={BTN_SM_P} onClick={() => setMod({ t: 'form' })}>+ Register sensor</button>}</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[14px] min-w-[760px]">
+            <thead>
+              <tr>
+                {['Sensor', 'Type', 'ESP32 · Pin', 'Area', 'Connection', 'Reading', 'Calibration', 'Last reading'].map((h) => (
+                  <th key={h} className="text-left text-mut font-semibold p-2 border-b-2 border-line whitespace-nowrap">{h}</th>
+                ))}
+                {canEdit && <th className="p-2 border-b-2 border-line" />}
+              </tr>
+            </thead>
+            <tbody>
+              {d.sensors.length === 0 && <tr><td colSpan="9" className="text-mut py-2.5 px-2 border-b border-line">No sensors registered.</td></tr>}
+              {d.sensors.map((s) => {
+                const dv = d.devices.find((v) => v.id === s.dev), a = d.areas.find((x) => x.id === s.area), cn = sensorConn(d, s), cs = calibState(s);
+                const live = cn === 'connected' && a ? a.r[s.type] : null;
+                return (
+                  <tr key={s.id}>
+                    <td className="py-[9px] px-2 border-b border-line align-middle"><b className="font-display">{s.id}</b></td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle">{M[s.type].n}</td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle">{dv?.code} · GPIO{s.pin}</td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle">{a ? a.name : <span className="text-mut">Not assigned</span>}</td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle"><span className={pill(CONN[cn])}>{cn}</span></td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle">{live != null ? `${live}${M[s.type].u}` : '—'}</td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle"><span className={pill(CAL[cs][1])} title={s.calib ? new Date(s.calib.t).toLocaleDateString() : ''}>{CAL[cs][0]}</span></td>
+                    <td className="py-[9px] px-2 border-b border-line align-middle">{ago(s.last)}</td>
+                    {canEdit && (
+                      <td className="py-[9px] px-2 border-b border-line align-middle">
+                        <div className="flex gap-1.5 flex-nowrap">
+                          <button className={BTN_SM} onClick={() => setMod({ t: 'form', s })}>Edit</button>
+                          <button className={BTN_SM} onClick={() => setMod({ t: 'cal', s })}>Calibrate</button>
+                          <button className={BTN_SM} title="Demo: simulate a wiring fault" onClick={() => fault(s)}>{s.fault ? 'Reconnect' : 'Fault'}</button>
+                          {canDel && <button className={BTN_SM_D} onClick={() => setMod({ t: 'del', s })}>Delete</button>}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
       {mod?.t === 'form' && <SensorForm d={d} sensor={mod.s} onSave={save} onClose={close} />}
       {mod?.t === 'cal' && <CalForm s={mod.s} onSave={calibrate} onClose={close} />}
       {mod?.t === 'del' && (
-        <Modal title="Delete sensor?" onClose={close} foot={<><button className="btn" onClick={close}>Cancel</button><button className="btn p" style={{ background: 'var(--crit)', borderColor: 'var(--crit)' }} onClick={remove}>Delete</button></>}>
+        <Modal title="Delete sensor?" onClose={close} foot={<><button className={BTN} onClick={close}>Cancel</button><button className={BTN_CRIT} onClick={remove}>Delete</button></>}>
           <p>{mod.s.id} will be removed and its GPIO pin freed.</p>
         </Modal>
       )}

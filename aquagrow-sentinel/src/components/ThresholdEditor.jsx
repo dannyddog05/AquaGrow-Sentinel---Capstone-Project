@@ -6,11 +6,16 @@ export const LBL = { cl: 'Critical below', wl: 'Warning below', wh: 'Warning abo
 
 export function ThresholdFields({ m, val, set }) {
   return (
-    <div className="fg" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '0 10px' }}>
-      {SIDES[m].map((s) => <Field key={s} label={LBL[s]}><input type="number" step="any" value={val[s] ?? ''} onChange={(e) => set({ ...val, [s]: e.target.value })} /></Field>)}
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-x-2.5 gap-y-0">
+      {SIDES[m].map((s) => (
+        <Field key={s} label={LBL[s]}>
+          <input type="number" step="any" value={val[s] ?? ''} onChange={(e) => set({ ...val, [s]: e.target.value })} />
+        </Field>
+      ))}
     </div>
   );
 }
+
 export function parseTh(m, val) {
   const v = {}; let err = '';
   SIDES[m].forEach((s) => { const n = parseFloat(val[s]); if (isNaN(n)) err = 'Fill in every level.'; v[s] = n; });

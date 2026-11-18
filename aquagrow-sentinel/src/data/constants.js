@@ -8,18 +8,34 @@ export const USERS=[
  {id:'u4',name:'Pedro Lim',email:'staff2@aquagrow.ph',pw:'Staff123',role:'Staff',phone:'+63 917 000 0004',farms:['f2']},
  {id:'u3',name:'Ana Reyes',email:'viewer@aquagrow.ph',pw:'Viewer123',role:'Viewer',phone:'+63 917 000 0003',farms:['f1']}];
 export const NAV=[
- ['dash','📊','Dashboard',['Owner','Staff','Viewer']],
- ['farms','🌱','Farm Management',['Owner','Staff','Viewer']],
- ['dev','📡','Devices & Sensors',['Owner','Staff','Viewer']],
+ ['dashboard','📊','Dashboard',['Owner','Staff','Viewer']],
+ ['farms-devices','🌱','Farms & Devices',['Owner','Staff','Viewer']],
+ ['irrigation','💧','Irrigation',['Owner','Staff']],
  ['alerts','🚨','Alerts',['Owner','Staff','Viewer']],
- ['irr','💧','Irrigation',['Owner','Staff']],
- ['hist','🗂️','History & Logs',['Owner','Staff','Viewer']],
- ['rep','📈','Reports',['Owner','Staff','Viewer']],
- ['notif','🔔','Notifications',['Owner','Staff','Viewer']],
- ['users','👥','Users & Access',['Owner']],
- ['set','⚙️','Settings',['Owner','Staff']],
- ['rel','🛡️','System Health',['Owner','Staff']],
- ['acct','👤','My Account',['Owner','Staff','Viewer']]];
+ ['reports-logs','📈','Reports & Logs',['Owner','Staff','Viewer']],
+ ['settings','⚙️','Settings',['Owner','Staff','Viewer']]];
+
+export const LEGACY_ROUTE_MAP={
+ dash:'/dashboard',
+ farms:'/farms-devices?tab=farms',
+ dev:'/farms-devices?tab=devices',
+ devices:'/farms-devices?tab=devices',
+ irr:'/irrigation',
+ alerts:'/alerts?tab=active',
+ notif:'/alerts?tab=notifications',
+ notifications:'/alerts?tab=notifications',
+ hist:'/reports-logs?tab=history',
+ history:'/reports-logs?tab=history',
+ logs:'/reports-logs?tab=logs',
+ rep:'/reports-logs?tab=reports',
+ reports:'/reports-logs?tab=reports',
+ acct:'/settings?tab=account',
+ account:'/settings?tab=account',
+ users:'/settings?tab=users',
+ rel:'/settings?tab=system-health',
+ 'system-health':'/settings?tab=system-health',
+ set:'/settings?tab=preferences',
+};
 
 
 

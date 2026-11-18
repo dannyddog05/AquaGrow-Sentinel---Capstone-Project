@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surface & ink tokens */
+  --color-bg: #f3f8f5;
+  --color-card: #ffffff;
+  --color-ink: #12302a;
+  --color-mut: #5d7a72;
+  --color-line: #dbe8e2;
+
+  /* Primary green (brand & active states) */
+  --color-brand: #2f9e44;
+  --color-brand-dark: #1f6f3a;
+  --color-brand-soft: #eef6f1;
+  --color-brand-pale: #e3f4e8;
+  --color-primary-100: #dcfce7;
+  --color-primary-300: #86efac;
+  --color-forest: #164e37;
+  --color-forest-soft: #266048;
+  --color-surface-dark: #164e37;
+  --color-surface-dark-link: #86efac;
+
+  /* Status chip & sparkline tokens (all fg/bg >= 4.5:1 WCAG AA) */
+  --color-status-normal-fg: #14532d;
+  --color-status-normal-bg: #dcfce7;
+  --color-status-normal-line: #1f7a3e;
+
+  --color-status-warning-fg: #92400e;
+  --color-status-warning-bg: #fef3c7;
+  --color-status-warning-line: #d97706;
+
+  --color-status-critical-fg: #9f1239;
+  --color-status-critical-bg: #ffe4e6;
+  --color-status-critical-line: #e11d48;
+
+  --color-status-offline-fg: #334155;
+  --color-status-offline-bg: #e2e8f0;
+  --color-status-offline-line: #64748b;
+
+  /* Status banner tints */
+  --color-banner-ok: #e6f5ea;
+  --color-banner-warn: #fff4e5;
+  --color-banner-crit: #fde7ef;
+  --color-banner-off: #eef1f4;
+
+  /* Secondary blue accent */
+  --color-accent: #1c7ed6;
+  --color-accent-dark: #0b4f9c;
+  --color-accent-soft: #e4f0fc;
+
+  /* Status tokens: healthy, warning, critical, offline */
+  --color-ok: #2f9e44;
+  --color-warn: #e08a00;
+  --color-crit: #d6336c;
+  --color-off: #7b8794;
+  --color-disc: #4b5563;
+  --color-unassigned: #94a3b8;
+
+  /* Typography */
+  --font-sans: "Nunito Sans", system-ui, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
+
+  /* Extra wide breakpoint */
+  --breakpoint-3xl: 100rem;
+
+  /* Custom animations */
+  --animate-pulse-soft: pulse-soft 1.6s infinite;
+  --animate-pulse-pump: pulse-soft 1.4s infinite;
+  --animate-status-blink: status-blink 1.7s ease-out infinite;
+}
+
+@keyframes pulse-soft {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes status-blink {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 68, 0.55);
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.4;
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(47, 158, 68, 0);
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 68, 0);
+    opacity: 1;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+  #root {
+    min-height: 100%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+    }
+  }
+}
+
+/* Hide scrollbars cleanly on horizontally scrollable tab strips */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

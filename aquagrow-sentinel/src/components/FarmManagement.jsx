@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Field, StatusDot, accent } from './ui';
+import { ACTS, BAR2, BTN, BTN_CRIT, BTN_P, BTN_SM, BTN_SM_D, CARD, CHK_LBL, ERR_TXT, Field, INNER_TABS, INP, KV_DL, Modal, PG, StatusDot, accent, innerTab, pill } from './ui';
 import { SIDES, LBL } from './ThresholdEditor';
 import { M, KIND } from '../data/constants';
 import { addLog, can, recordTh, thDiff, areaStatus, devOf, metricsOf, thOf, level, ago, now } from '../data/db';
@@ -19,8 +19,8 @@ function FarmForm({ farm, onSave, onClose }) {
   };
   return (
     <Modal title={farm ? 'Edit farm' : 'Add farm'} onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn p" onClick={submit}>{farm ? 'Save changes' : 'Add farm'}</button></>}>
-      <div className="fg">
+      foot={<><button className={BTN} onClick={onClose}>Cancel</button><button className={BTN_P} onClick={submit}>{farm ? 'Save changes' : 'Add farm'}</button></>}>
+      <div className="grid grid-cols-2 gap-x-3">
         <Field label="Farm name" err={err.name}><input autoFocus value={f.name} onChange={set('name')} /></Field>
         <Field label="Location" err={err.loc}><input value={f.loc} onChange={set('loc')} /></Field>
         <Field label="Description" cls="full"><textarea rows="3" value={f.desc} onChange={set('desc')} /></Field>
@@ -65,8 +65,8 @@ function AreaForm({ d, farmId, kind, area, onSave, onClose }) {
 
   return (
     <Modal title={`${area ? 'Edit' : 'Add'} ${label.toLowerCase()}`} onClose={onClose}
-      foot={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn p" onClick={submit}>{area ? 'Save changes' : `Add ${label.toLowerCase()}`}</button></>}>
-      <div className="fg">
+      foot={<><button className={BTN} onClick={onClose}>Cancel</button><button className={BTN_P} onClick={submit}>{area ? 'Save changes' : `Add ${label.toLowerCase()}`}</button></>}>
+      <div className="grid grid-cols-2 gap-x-3">
         <Field label={`${label} name`} err={err.name}><input autoFocus value={f.name} onChange={set('name')} /></Field>
         <Field label={k === 'garden' ? 'Crop type' : 'Aquatic species'} err={err.crop}><input value={f.crop} onChange={set('crop')} placeholder={k === 'garden' ? 'e.g. Tomato' : 'e.g. Nile tilapia'} /></Field>
         <Field label="Description" cls="full"><textarea rows="2" value={f.desc} onChange={set('desc')} /></Field>
@@ -78,23 +78,32 @@ function AreaForm({ d, farmId, kind, area, onSave, onClose }) {
               return <option key={dv.id} value={dv.id} disabled={full}>{dv.code} · {dv.status} · {u}/{capOf(dv)} areas{full ? ' (full)' : ''}</option>;
             })}
           </select>
-          <small className="mut">One ESP32 can monitor several areas when it has enough sensor pins. The limit here is a prototype rule.</small>
+          <small className="text-mut font-normal">One ESP32 can monitor several areas when it has enough sensor pins. The limit here is a prototype rule.</small>
         </Field>
       </div>
-      <div className={`fld${err.metrics ? ' bad' : ''}`}>Assigned sensors
-        <div>{opts.map((m) => <label key={m} className="chk" style={{ display: 'inline-flex' }}><input type="checkbox" checked={f.metrics.includes(m)} disabled={opts.length === 1} onChange={() => toggle(m)} />{M[m].n}</label>)}</div>
-        {err.metrics && <span className="err">{err.metrics}</span>}
+      <div className="grid gap-1 mb-3 font-semibold text-[13px]">Assigned sensors
+        <div>
+          {opts.map((m) => (
+            <label key={m} className={CHK_LBL}>
+              <input type="checkbox" checked={f.metrics.includes(m)} disabled={opts.length === 1} onChange={() => toggle(m)} />
+              {M[m].n}
+            </label>
+          ))}
+        </div>
+        {err.metrics && <span className={ERR_TXT}>{err.metrics}</span>}
       </div>
-      <div className="fld">Acceptable ranges (this area only)</div>
+      <div className="font-semibold text-[13px] mb-2">Acceptable ranges (this area only)</div>
       {opts.filter((m) => f.metrics.includes(m)).map((m) => (
-        <div className="th" key={m}>
-          <b className="f">{M[m].n}{M[m].u && ` (${M[m].u.trim()})`}</b>
-          <div className="fg" style={{ marginTop: 8 }}>
+        <div className="border border-line rounded-[10px] p-2.5 mb-2.5" key={m}>
+          <b className="font-display">{M[m].n}{M[m].u && ` (${M[m].u.trim()})`}</b>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
             {SIDES[m].map((s) => (
-              <Field key={s} label={LBL[s]}><input type="number" step="any" value={th[m][s]} onChange={(e) => setTh({ ...th, [m]: { ...th[m], [s]: e.target.value } })} /></Field>
+              <Field key={s} label={LBL[s]} cls="mb-1">
+                <input type="number" step="any" value={th[m][s]} onChange={(e) => setTh({ ...th, [m]: { ...th[m], [s]: e.target.value } })} />
+              </Field>
             ))}
           </div>
-          {err['t' + m] && <span className="err">{err['t' + m]}</span>}
+          {err['t' + m] && <span className={ERR_TXT}>{err['t' + m]}</span>}
         </div>
       ))}
     </Modal>
@@ -104,24 +113,40 @@ function AreaForm({ d, farmId, kind, area, onSave, onClose }) {
 function AreaView({ d, a, onClose }) {
   const dv = devOf(d, a), th = thOf(d, a), farm = d.farms.find((f) => f.id === a.farm), st = areaStatus(d, a);
   return (
-    <Modal title={a.name} onClose={onClose} foot={<button className="btn" onClick={onClose}>Close</button>}>
-      <dl className="kv">
-        <dt>Status</dt><dd><StatusDot s={st} /></dd>
-        <dt>Farm</dt><dd>{farm?.name}</dd>
-        <dt>Type</dt><dd>{a.kind === 'garden' ? 'Garden' : 'Pond'} · {a.crop}</dd>
-        <dt>Description</dt><dd>{a.desc || '—'}</dd>
-        <dt>ESP32 device</dt><dd>{dv ? `${dv.code} (${dv.status}, last seen ${ago(dv.seen)})` : 'Not assigned'}</dd>
+    <Modal title={a.name} onClose={onClose} foot={<button className={BTN} onClick={onClose}>Close</button>}>
+      <dl className={KV_DL}>
+        <dt className="text-mut">Status</dt><dd className="m-0"><StatusDot s={st} /></dd>
+        <dt className="text-mut">Farm</dt><dd className="m-0">{farm?.name}</dd>
+        <dt className="text-mut">Type</dt><dd className="m-0">{a.kind === 'garden' ? 'Garden' : 'Pond'} · {a.crop}</dd>
+        <dt className="text-mut">Description</dt><dd className="m-0">{a.desc || '—'}</dd>
+        <dt className="text-mut">ESP32 device</dt><dd className="m-0">{dv ? `${dv.code} (${dv.status}, last seen ${ago(dv.seen)})` : 'Not assigned'}</dd>
       </dl>
-      <b className="f">Sensors and acceptable ranges</b>
-      <div className="tw"><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, marginTop: 6 }}>
-        <thead><tr style={{ textAlign: 'left', color: 'var(--mut)' }}><th>Sensor</th><th>Reading</th><th>Warning</th><th>Critical</th></tr></thead>
-        <tbody>{metricsOf(a).map((m) => {
-          const t = th[m] || {}, lv = level(m, a.r[m], th);
-          return (<tr key={m} style={{ borderTop: '1px solid var(--line)' }}>
-            <td>{M[m].n}</td><td><span className={`pill ${dv ? lv : 'unassigned'}`}>{a.r[m] ?? '—'}{M[m].u}</span></td>
-            <td>{[t.wl != null && `< ${t.wl}`, t.wh != null && `> ${t.wh}`].filter(Boolean).join(' or ')}</td>
-            <td>{[t.cl != null && `< ${t.cl}`, t.ch != null && `> ${t.ch}`].filter(Boolean).join(' or ')}</td></tr>);
-        })}</tbody></table></div>
+      <b className="font-display">Sensors and acceptable ranges</b>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[14px] mt-1.5">
+          <thead>
+            <tr className="text-left text-mut">
+              <th className="py-1.5 pr-2 font-semibold">Sensor</th>
+              <th className="py-1.5 pr-2 font-semibold">Reading</th>
+              <th className="py-1.5 pr-2 font-semibold">Warning</th>
+              <th className="py-1.5 font-semibold">Critical</th>
+            </tr>
+          </thead>
+          <tbody>
+            {metricsOf(a).map((m) => {
+              const t = th[m] || {}, lv = level(m, a.r[m], th);
+              return (
+                <tr key={m} className="border-t border-line">
+                  <td className="py-2 pr-2">{M[m].n}</td>
+                  <td className="py-2 pr-2"><span className={pill(dv ? lv : 'unassigned')}>{a.r[m] ?? '—'}{M[m].u}</span></td>
+                  <td className="py-2 pr-2">{[t.wl != null && `< ${t.wl}`, t.wh != null && `> ${t.wh}`].filter(Boolean).join(' or ')}</td>
+                  <td className="py-2">{[t.cl != null && `< ${t.cl}`, t.ch != null && `> ${t.ch}`].filter(Boolean).join(' or ')}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </Modal>
   );
 }
@@ -170,46 +195,63 @@ export default function FarmManagement({ d, update, user }) {
   const rows = d.farms.map((f) => ({ f, ar: d.areas.filter((a) => a.farm === f.id && match(a)) })).filter((x) => x.ar.length || (!q && tab === 'all'));
 
   return (
-    <div className="pg">
-      <div className="bar2">
-        <div className="tabs" role="tablist">
-          {[['all', 'All'], ['garden', 'Gardens'], ['pond', 'Ponds']].map(([k, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`tab${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>{l}</button>)}
+    <div className={PG}>
+      <div className={BAR2}>
+        <div className={INNER_TABS} role="tablist">
+          {[['all', 'All'], ['garden', 'Gardens'], ['pond', 'Ponds']].map(([k, l]) => (
+            <button key={k} role="tab" aria-selected={tab === k} className={innerTab(tab === k)} onClick={() => setTab(k)}>{l}</button>
+          ))}
         </div>
-        <div className="acts">
-          <input className="inp" type="search" placeholder="Search area or crop" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
-          {canFarm && <button className="btn p" onClick={() => setMod({ t: 'farm' })}>+ Add farm</button>}
+        <div className={ACTS}>
+          <input className={INP} type="search" placeholder="Search area or crop" aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+          {canFarm && <button className={BTN_P} onClick={() => setMod({ t: 'farm' })}>+ Add farm</button>}
         </div>
       </div>
 
-      {rows.length === 0 && <div className="card"><p className="mut">{d.farms.length ? 'No areas match your search.' : 'No farms yet.'}{canFarm && !d.farms.length ? ' Use “Add farm” to start.' : ''}</p></div>}
+      {rows.length === 0 && (
+        <div className={CARD}>
+          <p className="text-mut">{d.farms.length ? 'No areas match your search.' : 'No farms yet.'}{canFarm && !d.farms.length ? ' Use “Add farm” to start.' : ''}</p>
+        </div>
+      )}
 
       {rows.map(({ f, ar }) => (
-        <div className="card" key={f.id}>
-          <div className="fh">
-            <div><h2 style={{ marginBottom: 2 }}>{f.name}</h2><div className="mut" style={{ fontSize: 13 }}>{f.loc} · {d.areas.filter((a) => a.farm === f.id).length} monitoring areas{f.desc && ` · ${f.desc}`}</div></div>
-            <div className="acts">
-              {canArea && <><button className="btn sm" onClick={() => setMod({ t: 'area', farmId: f.id, kind: 'garden' })}>+ Garden</button><button className="btn sm" onClick={() => setMod({ t: 'area', farmId: f.id, kind: 'pond' })}>+ Pond</button></>}
-              {canFarm && <button className="btn sm" onClick={() => setMod({ t: 'farm', farm: f })}>Edit farm</button>}
-              {canDel && <button className="btn sm d" onClick={() => setMod({ t: 'del', kind: 'farm', item: f })}>Delete</button>}
+        <div className={CARD} key={f.id}>
+          <div className="flex flex-col sm:flex-row justify-between gap-2.5 flex-wrap items-start mb-3">
+            <div>
+              <h2 className="text-[16px] font-bold font-display mb-0.5">{f.name}</h2>
+              <div className="text-mut text-[13px]">{f.loc} · {d.areas.filter((a) => a.farm === f.id).length} monitoring areas{f.desc && ` · ${f.desc}`}</div>
+            </div>
+            <div className={ACTS}>
+              {canArea && (
+                <>
+                  <button className={BTN_SM} onClick={() => setMod({ t: 'area', farmId: f.id, kind: 'garden' })}>+ Garden</button>
+                  <button className={BTN_SM} onClick={() => setMod({ t: 'area', farmId: f.id, kind: 'pond' })}>+ Pond</button>
+                </>
+              )}
+              {canFarm && <button className={BTN_SM} onClick={() => setMod({ t: 'farm', farm: f })}>Edit farm</button>}
+              {canDel && <button className={BTN_SM_D} onClick={() => setMod({ t: 'del', kind: 'farm', item: f })}>Delete</button>}
             </div>
           </div>
-          {ar.length === 0 ? <p className="mut">No gardens or ponds yet.</p> : (
-            <div className="grid cA">
+          {ar.length === 0 ? <p className="text-mut">No gardens or ponds yet.</p> : (
+            <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3.5">
               {ar.map((a) => {
                 const st = areaStatus(d, a), dv = devOf(d, a);
                 return (
-                  <div className={`card ${accent(st)}`} key={a.id} style={{ padding: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                      <div><b className="f">{a.name}</b><div className="mut" style={{ fontSize: 12 }}>{a.kind === 'garden' ? 'Garden' : 'Pond'} · {a.crop}</div></div>
+                  <div className={`${CARD} p-3.5 ${accent(st)}`} key={a.id}>
+                    <div className="flex justify-between gap-2">
+                      <div>
+                        <b className="font-display">{a.name}</b>
+                        <div className="text-mut text-[12px]">{a.kind === 'garden' ? 'Garden' : 'Pond'} · {a.crop}</div>
+                      </div>
                       <StatusDot s={st} />
                     </div>
-                    <div className="mut" style={{ fontSize: 13, margin: '8px 0' }}>
+                    <div className="text-mut text-[13px] my-2">
                       {dv ? `${dv.code} (${dv.status})` : 'No device assigned'} · {metricsOf(a).map((m) => M[m].n).join(', ')}
                     </div>
-                    <div className="acts">
-                      <button className="btn sm" onClick={() => setMod({ t: 'view', id: a.id })}>View</button>
-                      {canArea && <button className="btn sm" onClick={() => setMod({ t: 'area', farmId: f.id, area: a })}>Edit</button>}
-                      {canDel && <button className="btn sm d" onClick={() => setMod({ t: 'del', kind: a.kind, item: a })}>Delete</button>}
+                    <div className={ACTS}>
+                      <button className={BTN_SM} onClick={() => setMod({ t: 'view', id: a.id })}>View</button>
+                      {canArea && <button className={BTN_SM} onClick={() => setMod({ t: 'area', farmId: f.id, area: a })}>Edit</button>}
+                      {canDel && <button className={BTN_SM_D} onClick={() => setMod({ t: 'del', kind: a.kind, item: a })}>Delete</button>}
                     </div>
                   </div>
                 );
@@ -223,11 +265,19 @@ export default function FarmManagement({ d, update, user }) {
       {mod?.t === 'area' && <AreaForm d={d} farmId={mod.farmId} kind={mod.kind} area={mod.area} onSave={saveArea} onClose={close} />}
       {mod?.t === 'view' && d.areas.find((a) => a.id === mod.id) && <AreaView d={d} a={d.areas.find((a) => a.id === mod.id)} onClose={close} />}
       {mod?.t === 'del' && (
-        <Modal title={`Delete ${mod.kind}?`} onClose={close} foot={<><button className="btn" onClick={close}>Cancel</button><button className="btn p" style={{ background: 'var(--crit)', borderColor: 'var(--crit)' }} onClick={remove}>Delete</button></>}>
+        <Modal title={`Delete ${mod.kind}?`} onClose={close} foot={<><button className={BTN} onClick={close}>Cancel</button><button className={BTN_CRIT} onClick={remove}>Delete</button></>}>
           <p>“{mod.item.name}” will be removed{mod.kind === 'farm' ? ` together with its ${d.areas.filter((a) => a.farm === mod.item.id).length} monitoring area(s)` : ''}. This cannot be undone.</p>
         </Modal>
       )}
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {toast && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bg-ink text-white px-4 py-2.5 rounded-[10px] z-20 text-[14px] shadow-lg"
+          style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
+          role="status"
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
